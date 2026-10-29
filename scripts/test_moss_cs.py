@@ -1,9 +1,10 @@
 # Rychly test cestiny v MOSS-TTS (mimo Voicebox). Spusteni:
-#   uv run --python 3.12 --with mlx-audio==0.6.3 python test_moss_cs.py
+#   uv run --python 3.12 --with mlx-audio==0.6.3 python test_moss_cs.py [model ...]
+# Bez argumentu zkusi 1.7B a v1.5 (4B). Velky 8B model: OpenMOSS-Team/MOSS-TTS-v1.5
 # Kazdy model zkusi dva rezimy klonovani:
 #   generation   = jen vzorek hlasu
 #   continuation = vzorek hlasu + jeho prepis (obvykle vernejsi hlas)
-import os, sqlite3
+import os, sqlite3, sys
 import numpy as np
 from mlx_audio.tts import load
 from mlx_audio.audio_io import write, read
@@ -20,8 +21,8 @@ arr, sr = read(ref)
 print(f"Vzorek hlasu: {ref} ({len(arr) / sr:.1f} s)")
 print("Prepis vzorku:", ref_text)
 
-for repo in ["OpenMOSS-Team/MOSS-TTS-Local-Transformer",
-             "OpenMOSS-Team/MOSS-TTS-Local-Transformer-v1.5"]:
+for repo in sys.argv[1:] or ["OpenMOSS-Team/MOSS-TTS-Local-Transformer",
+                            "OpenMOSS-Team/MOSS-TTS-Local-Transformer-v1.5"]:
     model = load(repo, lazy=True)
     for mode in ["generation", "continuation"]:
         print("Model:", repo, "| rezim:", mode)
