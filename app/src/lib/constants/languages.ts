@@ -11,6 +11,7 @@
 /** All languages that any engine supports. */
 export const ALL_LANGUAGES = {
   ar: 'Arabic',
+  cs: 'Czech',
   da: 'Danish',
   de: 'German',
   el: 'Greek',
@@ -75,6 +76,7 @@ export const ENGINE_LANGUAGES: Record<string, readonly LanguageCode[]> = {
   // already knows -- widening that list is a separate change.
   omnivoice: [
     'ar',
+    'cs',
     'da',
     'de',
     'el',

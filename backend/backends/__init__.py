@@ -468,6 +468,7 @@ def _get_non_qwen_tts_configs() -> list[ModelConfig]:
                 "sv",
                 "sw",
                 "tr",
+                "cs",
             ],
         ),
     ]
