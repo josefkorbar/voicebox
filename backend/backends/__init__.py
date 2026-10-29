@@ -239,6 +239,7 @@ TTS_ENGINES = {
     "tada": "TADA",
     "kokoro": "Kokoro",
     "omnivoice": "OmniVoice",
+    "moss": "MOSS-TTS",
 }
 
 LLM_ENGINES = {
@@ -347,7 +348,7 @@ def _get_non_qwen_tts_configs() -> list[ModelConfig]:
         chatterbox_size_mb = 3200
         chatterbox_aux_repos = ()
 
-    return [
+    configs = [
         ModelConfig(
             model_name="luxtts",
             display_name="LuxTTS (Fast, CPU-friendly)",
@@ -472,6 +473,33 @@ def _get_non_qwen_tts_configs() -> list[ModelConfig]:
             ],
         ),
     ]
+
+    if on_mlx:
+        from .moss_backend import LANGUAGE_NAMES, MOSS_HF_REPOS, model_name_for_size
+
+        # MOSS-TTS runs on mlx-audio only (see moss_backend). Sizes include the
+        # separately downloaded audio tokenizer.
+        moss_variants = [
+            ("1.7B", "MOSS-TTS 1.7B (Multilingual)", 11800),
+            ("4B", "MOSS-TTS v1.5 4B (Multilingual)", 15600),
+            ("8B", "MOSS-TTS v1.5 8B (Multilingual)", 23000),
+        ]
+        for size, display_name, size_mb in moss_variants:
+            model_repo, tokenizer_repo = MOSS_HF_REPOS[size]
+            configs.append(
+                ModelConfig(
+                    model_name=model_name_for_size(size),
+                    display_name=display_name,
+                    engine="moss",
+                    hf_repo_id=model_repo,
+                    aux_hf_repo_ids=(tokenizer_repo,),
+                    model_size=size,
+                    size_mb=size_mb,
+                    languages=sorted(LANGUAGE_NAMES),
+                )
+            )
+
+    return configs
 
 
 def _get_whisper_configs() -> list[ModelConfig]:
@@ -636,7 +664,7 @@ async def load_engine_model(engine: str, model_size: str = "default") -> None:
     backend = get_tts_backend_for_engine(engine)
     if engine in ("qwen", "qwen_custom_voice"):
         await backend.load_model_async(model_size)
-    elif engine == "tada":
+    elif engine in ("tada", "moss"):
         await backend.load_model(model_size)
     else:
         await backend.load_model()
@@ -653,7 +681,7 @@ async def ensure_model_cached_or_raise(engine: str, model_size: str = "default")
             cfg = c
             break
 
-    if engine in ("qwen", "qwen_custom_voice", "tada"):
+    if engine in ("qwen", "qwen_custom_voice", "tada", "moss"):
         if not backend._is_model_cached(model_size):
             raise HTTPException(
                 status_code=400,
@@ -701,7 +729,7 @@ def unload_model_by_config(config: ModelConfig) -> bool:
             return True
         return False
 
-    if config.engine == "qwen_custom_voice":
+    if config.engine in ("qwen_custom_voice", "moss"):
         backend = get_tts_backend_for_engine(config.engine)
         loaded_size = getattr(backend, "_current_model_size", None) or getattr(backend, "model_size", None)
         if backend.is_loaded() and loaded_size == config.model_size:
@@ -739,7 +767,7 @@ def check_model_loaded(config: ModelConfig) -> bool:
             loaded_size = getattr(tts_model, "_current_model_size", None) or getattr(tts_model, "model_size", None)
             return tts_model.is_loaded() and loaded_size == config.model_size
 
-        if config.engine == "qwen_custom_voice":
+        if config.engine in ("qwen_custom_voice", "moss"):
             backend = get_tts_backend_for_engine(config.engine)
             loaded_size = getattr(backend, "_current_model_size", None) or getattr(backend, "model_size", None)
             return backend.is_loaded() and loaded_size == config.model_size
@@ -761,7 +789,7 @@ def get_model_load_func(config: ModelConfig):
     if config.engine == "qwen":
         return lambda: tts.get_tts_model().load_model(config.model_size)
 
-    if config.engine == "qwen_custom_voice":
+    if config.engine in ("qwen_custom_voice", "moss"):
         return lambda: get_tts_backend_for_engine(config.engine).load_model(config.model_size)
 
     if config.engine == "qwen_llm":
@@ -843,6 +871,10 @@ def get_tts_backend_for_engine(engine: str) -> TTSBackend:
             from .omnivoice_backend import OmniVoiceBackend
 
             backend = OmniVoiceBackend()
+        elif engine == "moss":
+            from .moss_backend import MossTTSBackend
+
+            backend = MossTTSBackend()
         elif engine == "qwen_custom_voice":
             from .qwen_custom_voice_backend import QwenCustomVoiceBackend
 

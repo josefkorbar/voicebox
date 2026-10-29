@@ -74,6 +74,32 @@ export const ENGINE_LANGUAGES: Record<string, readonly LanguageCode[]> = {
   qwen_voice_design: ['zh', 'en', 'ja', 'ko', 'de', 'fr', 'ru', 'pt', 'es', 'it'],
   // OmniVoice covers 600+ languages. Listed here are the ones ALL_LANGUAGES
   // already knows -- widening that list is a separate change.
+  // MOSS-TTS supports 31 languages; listed are the ones ALL_LANGUAGES knows.
+  moss: [
+    'ar',
+    'cs',
+    'da',
+    'de',
+    'el',
+    'en',
+    'es',
+    'fi',
+    'fr',
+    'he',
+    'hi',
+    'it',
+    'ja',
+    'ko',
+    'ms',
+    'nl',
+    'pl',
+    'pt',
+    'ru',
+    'sv',
+    'sw',
+    'tr',
+    'zh',
+  ],
   omnivoice: [
     'ar',
     'cs',

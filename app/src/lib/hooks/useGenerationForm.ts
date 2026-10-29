@@ -17,7 +17,7 @@ const generationSchema = z.object({
   text: z.string().min(1, '').max(50000),
   language: z.enum(LANGUAGE_CODES as [LanguageCode, ...LanguageCode[]]),
   seed: z.number().int().optional(),
-  modelSize: z.enum(['1.7B', '0.6B', '1B', '3B']).optional(),
+  modelSize: z.enum(['1.7B', '0.6B', '1B', '3B', '4B', '8B']).optional(),
   instruct: z.string().max(500).optional(),
   engine: z
     .enum([
@@ -30,6 +30,7 @@ const generationSchema = z.object({
       'tada',
       'kokoro',
       'omnivoice',
+      'moss',
     ])
     .optional(),
   personality: z.boolean().optional(),
@@ -107,9 +108,11 @@ export function useGenerationForm(options: UseGenerationFormOptions = {}) {
                     ? 'qwen-voice-design-1.7B'
                     : engine === 'omnivoice'
                       ? 'omnivoice'
-                      : engine === 'qwen_custom_voice'
-                        ? `qwen-custom-voice-${data.modelSize}`
-                        : `qwen-tts-${data.modelSize}`;
+                      : engine === 'moss'
+                        ? `moss-tts-${data.modelSize || '1.7B'}`
+                        : engine === 'qwen_custom_voice'
+                          ? `qwen-custom-voice-${data.modelSize}`
+                          : `qwen-tts-${data.modelSize}`;
       const displayName =
         engine === 'luxtts'
           ? 'LuxTTS'
@@ -127,13 +130,15 @@ export function useGenerationForm(options: UseGenerationFormOptions = {}) {
                     ? 'Qwen VoiceDesign 1.7B'
                     : engine === 'omnivoice'
                       ? 'OmniVoice'
-                      : engine === 'qwen_custom_voice'
-                        ? data.modelSize === '1.7B'
-                          ? 'Qwen CustomVoice 1.7B'
-                          : 'Qwen CustomVoice 0.6B'
-                        : data.modelSize === '1.7B'
-                          ? 'Qwen TTS 1.7B'
-                          : 'Qwen TTS 0.6B';
+                      : engine === 'moss'
+                        ? `MOSS-TTS ${data.modelSize || '1.7B'}`
+                        : engine === 'qwen_custom_voice'
+                          ? data.modelSize === '1.7B'
+                            ? 'Qwen CustomVoice 1.7B'
+                            : 'Qwen CustomVoice 0.6B'
+                          : data.modelSize === '1.7B'
+                            ? 'Qwen TTS 1.7B'
+                            : 'Qwen TTS 0.6B';
 
       // Check if model needs downloading
       try {
@@ -149,7 +154,10 @@ export function useGenerationForm(options: UseGenerationFormOptions = {}) {
       }
 
       const hasModelSizes =
-        engine === 'qwen' || engine === 'qwen_custom_voice' || engine === 'tada';
+        engine === 'qwen' ||
+        engine === 'qwen_custom_voice' ||
+        engine === 'tada' ||
+        engine === 'moss';
       const supportsInstruct = engineSupportsInstruct(engine);
       const effectsChain = options.getEffectsChain?.();
       // This now returns immediately with status="generating"

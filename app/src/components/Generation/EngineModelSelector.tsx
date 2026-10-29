@@ -29,6 +29,9 @@ const ENGINE_OPTIONS = [
   { value: 'tada:3B', label: 'TADA 3B Multilingual', engine: 'tada' },
   { value: 'kokoro', label: 'Kokoro 82M', engine: 'kokoro' },
   { value: 'omnivoice', label: 'OmniVoice (non-commercial)', engine: 'omnivoice' },
+  { value: 'moss:1.7B', label: 'MOSS-TTS 1.7B', engine: 'moss' },
+  { value: 'moss:4B', label: 'MOSS-TTS v1.5 4B', engine: 'moss' },
+  { value: 'moss:8B', label: 'MOSS-TTS v1.5 8B', engine: 'moss' },
 ] as const;
 
 const ENGINE_DESCRIPTIONS: Record<string, string> = {
@@ -41,6 +44,7 @@ const ENGINE_DESCRIPTIONS: Record<string, string> = {
   tada: 'HumeAI, 700s+ coherent audio',
   kokoro: '82M params, CPU realtime, 8 langs',
   omnivoice: '23 languages, voice design. CC-BY-NC weights: non-commercial use only',
+  moss: 'Czech + 22 more languages, Apple Silicon only',
 };
 
 /** Engines that only support English and should force language to 'en' on select. */
@@ -54,6 +58,7 @@ const CLONING_ENGINES = new Set([
   'chatterbox_turbo',
   'tada',
   'omnivoice',
+  'moss',
 ]);
 
 /** Engines that synthesise a voice from a written description. */
@@ -68,6 +73,7 @@ function getSelectValue(engine: string, modelSize?: string): string {
   if (engine === 'qwen') return `qwen:${modelSize || '1.7B'}`;
   if (engine === 'qwen_custom_voice') return `qwen_custom_voice:${modelSize || '1.7B'}`;
   if (engine === 'tada') return `tada:${modelSize || '1B'}`;
+  if (engine === 'moss') return `moss:${modelSize || '1.7B'}`;
   return engine;
 }
 
@@ -104,6 +110,15 @@ export function applyEngineSelection(form: UseFormReturn<GenerationFormValues>, 
       if (!available.some((l) => l.value === currentLang)) {
         form.setValue('language', available[0]?.value ?? 'en');
       }
+    }
+  } else if (value.startsWith('moss:')) {
+    const [, modelSize] = value.split(':');
+    form.setValue('engine', 'moss');
+    form.setValue('modelSize', modelSize as '1.7B' | '4B' | '8B');
+    const currentLang = form.getValues('language');
+    const available = getLanguageOptionsForEngine('moss');
+    if (!available.some((l) => l.value === currentLang)) {
+      form.setValue('language', available[0]?.value ?? 'en');
     }
   } else {
     form.setValue('engine', value as GenerationFormValues['engine']);
